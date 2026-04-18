@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Genshin Weekly Planner</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a2e">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --bg:        #1a1a2e;
+  --bg2:       #16213e;
+  --bg3:       #0f3460;
+  --panel:     #1f2b47;
+  --panel2:    #1a2540;
+  --border:    rgba(160,140,255,0.18);
+  --border-hi: rgba(160,140,255,0.45);
+  --text:      #e2deff;
+  --text-mid:  #a89fd4;
+  --text-dim:  #6b6490;
+  --gold:      #c9a84c;
+  --gold-hi:   #f0d060;
+  --gold-dim:  #b8924a;
+  --gold-glow: rgba(240,208,96,0.55);
+  --green:     #5bc48a;
+  --green-hi:  #7de0a8;
+  --setA:      #7eb8f7;
+  --setB:      #f0a070;
+  --setC:      #70d4a0;
+  --sun:       #c090f0;
+  --red:       #f07070;
+  --artifact:  #f090b0;
+  --weekly:    #a080f0;
+  --blue:      #7eb8f7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Quicksand',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+.bg-layer{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 55% 45% at 10% 30%,rgba(120,80,220,.12) 0%,transparent 70%),
+    radial-gradient(ellipse 45% 55% at 90% 70%,rgba(80,120,220,.1) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 35% at 50% 10%,rgba(100,60,180,.08) 0%,transparent 70%);}
+.bg-layer::after{content:'';position:fixed;inset:0;
+  background-image:radial-gradient(circle,rgba(160,140,255,.07) 1px,transparent 1px);
+  background-size:28px 28px;pointer-events:none;}
+
+#sparks{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.sp{position:absolute;border-radius:50%;animation:sparkle var(--d,4s) var(--dl,0s) infinite ease-in-out;}
+@keyframes sparkle{0%,100%{opacity:0;transform:scale(.6);}50%{opacity:var(--op,.4);transform:scale(1.2);}}
+
+.wrap{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:24px 32px 60px;}
+
+/* header */
+.hdr{text-align:center;padding:30px 0 24px;}
+.hdr-orn{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px;}
+.hdr-wing{flex:1;max-width:160px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim));}
+.hdr-wing.r{background:linear-gradient(270deg,transparent,var(--gold-dim));}
+.hdr-star{font-size:18px;color:var(--gold-hi);animation:pg 2.5s infinite ease-in-out;
+  filter:drop-shadow(0 0 8px var(--gold-glow)) drop-shadow(0 0 20px var(--gold-glow));}
+@keyframes pg{0%,100%{filter:drop-shadow(0 0 8px var(--gold-glow)) drop-shadow(0 0 18px var(--gold-glow));}
+  50%{filter:drop-shadow(0 0 18px var(--gold-glow)) drop-shadow(0 0 50px var(--gold-glow)) drop-shadow(0 0 80px rgba(245,200,66,.4));}}
+.hdr h1{font-family:'Cinzel',serif;font-size:clamp(20px,3.5vw,34px);font-weight:900;letter-spacing:5px;color:var(--gold-dim);
+  text-transform:uppercase;animation:tg 3s infinite ease-in-out;}
+@keyframes tg{
+  0%,100%{text-shadow:0 0 12px var(--gold-glow),0 0 28px var(--gold-glow),0 0 55px rgba(245,200,66,.3);}
+  50%{text-shadow:0 0 20px var(--gold-glow),0 0 55px var(--gold-glow),0 0 100px rgba(245,200,66,.5),0 0 150px rgba(245,200,66,.2);}}
+.hdr p{font-size:11px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:6px;}
+.hdr-sub{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;}
+.sl{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--border-hi));}
+.sl.r{background:linear-gradient(270deg,transparent,var(--border-hi));}
+.sd{width:6px;height:6px;background:var(--green);transform:rotate(45deg);box-shadow:0 0 8px rgba(60,180,100,.5);}
+
+/* layout */
+.cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start;}
+@media(max-width:800px){.cols{grid-template-columns:1fr;}}
+.cols > div:first-child{display:flex;flex-direction:column;gap:14px;}
+.cols > div:last-child{display:flex;flex-direction:column;gap:14px;}
+.full-row{display:flex;flex-direction:column;gap:14px;margin-top:14px;}
+
+/* panel */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative;box-shadow:0 2px 16px rgba(60,120,80,.07);display:flex;flex-direction:column;}
+.panel .pb{flex:1;}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;z-index:1;
+  background:linear-gradient(90deg,transparent,var(--gold-hi),transparent);
+  box-shadow:0 0 10px var(--gold-glow),0 0 22px var(--gold-glow),0 0 40px rgba(245,200,66,.25);}
+.ph{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;background:var(--panel2);}
+.ph h2{font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--gold-dim);letter-spacing:2px;text-transform:uppercase;}
+.pb{padding:15px;}
+
+/* form */
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;font-weight:700;}
+.field input,.field select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:10px 13px;font-family:'Quicksand',sans-serif;font-size:14px;font-weight:600;outline:none;transition:border-color .2s,box-shadow .2s;}
+.field input:focus,.field select:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(90,160,110,.12);}
+.field select option{background:var(--panel);}
+.level-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+/* elem */
+.egrid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;}
+.eb{aspect-ratio:1;border-radius:7px;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s;}
+.eb:hover{transform:scale(1.1);border-color:var(--border-hi);}
+.eb.on{border-color:var(--gold);background:rgba(200,154,40,.1);box-shadow:0 0 10px var(--gold-glow),0 0 22px rgba(245,200,66,.3);}
+
+/* set */
+.set-opts{display:flex;flex-direction:column;gap:6px;}
+.sb{padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;display:flex;align-items:center;gap:10px;font-family:'Quicksand',sans-serif;color:var(--text);font-size:12px;text-align:left;transition:all .2s;font-weight:600;}
+.sb:hover{border-color:var(--border-hi);background:var(--bg3);}
+.sb.on{border-color:var(--gold-dim);background:rgba(200,154,40,.08);box-shadow:0 0 12px rgba(200,154,40,.15);}
+.sdot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.sname{font-family:'Cinzel',serif;font-size:12px;color:var(--gold-dim);font-weight:600;}
+.sdays{font-size:10px;color:var(--text-dim);margin-top:1px;}
+
+.art-note{font-size:10px;color:var(--text-dim);margin-top:4px;font-style:italic;}
+
+/* add btn */
+.add-btn{width:100%;padding:11px;border-radius:8px;border:1.5px solid var(--gold-dim);background:linear-gradient(135deg,rgba(200,154,40,.18),rgba(200,154,40,.06));color:var(--gold-dim);font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .25s;text-transform:uppercase;}
+.add-btn:hover{background:linear-gradient(135deg,rgba(200,154,40,.32),rgba(200,154,40,.12));box-shadow:0 0 22px rgba(200,154,40,.35),0 0 45px rgba(200,154,40,.18);transform:translateY(-1px);}
+
+/* char list */
+.char-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;padding-right:3px;}
+.char-list::-webkit-scrollbar{width:4px;}
+.char-list::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:2px;}
+.char-row{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);font-size:12px;transition:border-color .15s;}
+.char-row:hover{border-color:var(--border-hi);}
+.char-elem{font-size:17px;line-height:1;}
+.char-info{flex:1;min-width:0;}
+.char-name{font-weight:700;color:var(--text);font-size:13px;}
+.char-meta{font-size:10px;color:var(--text-dim);margin-top:1px;}
+.char-art{font-size:10px;color:var(--artifact);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.csb{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:.5px;flex-shrink:0;}
+.cs-A{background:rgba(74,144,217,.15);color:var(--setA);}
+.cs-B{background:rgba(217,120,64,.15);color:var(--setB);}
+.cs-C{background:rgba(82,184,106,.15);color:var(--setC);}
+.char-del{background:none;border:none;cursor:pointer;color:transparent;font-size:12px;transition:color .15s;padding:2px 4px;border-radius:3px;flex-shrink:0;}
+.char-row:hover .char-del{color:var(--red);}
+.empty-chars{text-align:center;padding:24px;color:var(--text-dim);font-size:12px;font-style:italic;}
+
+/* top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;padding:13px 16px;background:var(--panel);border:1px solid var(--border);border-radius:12px;position:relative;box-shadow:0 2px 16px rgba(60,120,80,.07);}
+.topbar::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0;background:linear-gradient(90deg,transparent,var(--gold-hi),transparent);box-shadow:0 0 12px var(--gold-glow),0 0 28px var(--gold-glow),0 0 55px rgba(245,200,66,.25);}
+.wlabel{font-family:'Cinzel',serif;font-size:14px;color:var(--gold-dim);letter-spacing:1.5px;}
+.wsub{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.tbtn{padding:7px 13px;border-radius:7px;border:1.5px solid var(--border);background:var(--panel2);color:var(--text-mid);font-size:11px;font-family:'Quicksand',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;text-decoration:none;font-weight:700;}
+.tbtn:hover{border-color:var(--border-hi);color:var(--text);background:var(--bg3);}
+.tbtn.hi{border-color:var(--gold-dim);background:linear-gradient(135deg,rgba(200,154,40,.15),rgba(200,154,40,.05));color:var(--gold-dim);}
+.tbtn.hi:hover{background:linear-gradient(135deg,rgba(200,154,40,.28),rgba(200,154,40,.1));box-shadow:0 0 18px rgba(200,154,40,.3),0 0 36px rgba(200,154,40,.15);}
+
+/* export box */
+#export-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(60,120,80,.1);position:relative;}
+#export-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;z-index:2;
+  background:linear-gradient(90deg,transparent,var(--gold-hi),var(--green-hi),var(--gold-hi),transparent);
+  animation:rg 4s infinite ease-in-out;}
+@keyframes rg{
+  0%,100%{box-shadow:0 0 14px var(--gold-glow),0 0 32px var(--gold-glow),0 0 60px rgba(245,200,66,.25);}
+  50%{box-shadow:0 0 22px var(--gold-glow),0 0 60px var(--gold-glow),0 0 110px rgba(245,200,66,.45),0 0 160px rgba(76,201,122,.2);}}
+
+.exp-hdr{padding:13px 16px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.exp-title{font-family:'Cinzel',serif;font-size:13px;color:var(--gold-dim);letter-spacing:2px;text-shadow:0 0 10px var(--gold-glow),0 0 22px rgba(200,154,40,.3);}
+.exp-sub{font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-top:2px;}
+.exp-legend{padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;}
+.leg-bar{width:12px;height:3px;border-radius:2px;}
+
+/* 7-col grid */
+.grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:12px;background:var(--bg);}
+@media(max-width:700px){.grid7{grid-template-columns:1fr;}}
+
+.dcol{display:flex;flex-direction:column;}
+.dhdr{text-align:center;padding:9px 5px 7px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;background:var(--panel2);position:relative;}
+.dhdr.today-hdr{box-shadow:inset 0 0 0 2px var(--gold),0 0 18px rgba(200,154,40,.35),0 0 40px rgba(200,154,40,.18);}
+.dhdr::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--border-hi),transparent);}
+.dhdr.ta{border-top:3px solid var(--setA);}
+.dhdr.tb{border-top:3px solid var(--setB);}
+.dhdr.tc{border-top:3px solid var(--setC);}
+.dhdr.ts{border-top:3px solid var(--sun);}
+.dname{font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:var(--gold-dim);letter-spacing:1.5px;}
+.ddate{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.dbadge{font-size:8px;letter-spacing:.8px;margin-top:4px;padding:2px 6px;border-radius:10px;display:inline-block;font-weight:700;}
+.ba{background:rgba(74,144,217,.15);color:var(--setA);}
+.bb{background:rgba(217,120,64,.15);color:var(--setB);}
+.bc{background:rgba(82,184,106,.15);color:var(--setC);}
+.bsun{background:rgba(160,96,212,.15);color:var(--sun);}
+
+.dtasks{background:var(--panel);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:7px;min-height:80px;display:flex;flex-direction:column;gap:4px;flex:1;}
+
+/* task card */
+.tcard{padding:9px 11px 8px;border-radius:6px;border-left:3px solid var(--green);background:var(--bg2);font-size:12px;position:relative;animation:cin .28s ease-out;transition:all .18s;}
+@keyframes cin{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.tcard:hover{background:var(--bg3);transform:translateY(-1px);box-shadow:0 3px 10px rgba(60,120,80,.1);}
+.tcard.type-talent{border-left-color:var(--setA);}
+.tcard.type-artifact{border-left-color:var(--artifact);}
+.tcard.type-boss{border-left-color:var(--red);}
+.tcard.type-ascend{border-left-color:var(--setC);}
+.tcard.type-weekly{border-left-color:var(--weekly);background:rgba(128,96,212,.06);}
+.tcard.done{opacity:.35;}
+.tcard.done .tc-char{text-decoration:line-through;color:var(--text-dim);}
+.tc-top{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.tc-elem{font-size:13px;line-height:1;flex-shrink:0;}
+.tc-char{font-weight:700;color:var(--text);font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tc-done{background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0;transition:color .15s;flex-shrink:0;line-height:1;}
+.tc-done:hover{color:var(--green);}
+.tcard.done .tc-done{color:var(--green);}
+.tc-label{font-size:9.5px;color:var(--text-mid);line-height:1.4;font-weight:600;}
+.tc-sub{font-size:9px;color:var(--text-dim);line-height:1.4;margin-top:1px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tc-link{display:inline-flex;align-items:center;gap:2px;color:var(--blue);font-size:9px;text-decoration:none;margin-top:3px;opacity:.7;transition:opacity .15s;font-weight:600;}
+.tc-link:hover{opacity:1;text-decoration:underline;}
+.free-badge{font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(76,201,122,.15);color:var(--green);font-weight:700;display:inline-block;margin-top:2px;}
+.resin-rule{font-size:9px;padding:3px 7px;border-radius:5px;background:rgba(74,144,217,.1);color:var(--setA);font-weight:700;text-align:center;margin-bottom:2px;}
+.day-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:10px;font-style:italic;opacity:.5;padding:14px 0;}
+
+/* notes */
+.notes-ta{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:9px 12px;font-family:'Quicksand',sans-serif;font-size:12px;font-weight:500;outline:none;resize:vertical;min-height:60px;line-height:1.5;transition:all .2s;}
+.notes-ta:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(90,160,110,.1);}
+.notes-ta::placeholder{color:var(--text-dim);font-style:italic;}
+
+/* resin */
+.rbar-wrap{height:9px;background:var(--bg3);border-radius:9px;overflow:hidden;border:1px solid var(--border);margin-top:5px;}
+.rbar{height:100%;border-radius:9px;transition:width .4s,background .4s;}
+input[type=range]{width:100%;-webkit-appearance:none;height:3px;background:var(--bg3);border-radius:2px;outline:none;margin-top:9px;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 0 8px var(--gold-glow),0 0 18px rgba(200,154,40,.4);}
+
+/* checklist */
+.cl-item{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--bg2);border-radius:7px;border:1px solid var(--border);cursor:pointer;transition:all .18s;font-size:13px;margin-bottom:6px;font-weight:600;}
+.cl-item:last-child{margin-bottom:0;}
+.cl-item:hover{border-color:var(--border-hi);background:var(--bg3);}
+.cl-item.ck{opacity:.38;}
+.cl-item.ck .cl-label{text-decoration:line-through;}
+.cl-box{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border-hi);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;transition:all .18s;}
+.cl-item.ck .cl-box{background:var(--green);border-color:var(--green);color:#fff;}
+
+/* links */
+.links-g{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.lk{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--text-mid);font-size:12px;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:700;}
+.lk:hover{border-color:var(--border-hi);color:var(--text);background:var(--bg3);}
+
+.sep{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:12px 0;}
+
+/* toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--panel);border:1.5px solid var(--gold-dim);border-radius:9px;padding:11px 22px;font-size:12px;color:var(--gold-dim);z-index:9999;transition:transform .3s ease;box-shadow:0 8px 30px rgba(0,0,0,.1),0 0 22px var(--gold-glow);font-family:'Cinzel',serif;letter-spacing:1px;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px;}
+
+@media (max-width: 800px) {
+  .wrap { padding: 12px 10px 40px; }
+  .hdr { padding: 20px 0 16px; }
+  .hdr h1 { font-size: clamp(16px, 5vw, 24px); letter-spacing: 3px; }
+  .hdr p { font-size: 10px; letter-spacing: 2px; }
+  .cols { grid-template-columns: 1fr; gap: 12px; }
+  .grid7 { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
+  .dcol { break-inside: avoid; }
+  .topbar { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 12px; }
+  .topbar > div:last-child { width: 100%; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tbtn { flex: 1; justify-content: center; font-size: 10px; padding: 6px 8px; }
+  .exp-hdr { flex-direction: column; gap: 6px; padding: 10px 12px; }
+  .exp-legend { gap: 8px; padding: 6px 12px; }
+  .leg { font-size: 9px; }
+  .links-g { grid-template-columns: 1fr 1fr; }
+  .lk { font-size: 10px; padding: 7px 8px; }
+  .panel .pb { padding: 12px; }
+  .egrid { grid-template-columns: repeat(4,1fr); gap: 6px; }
+  .eb { font-size: 20px; }
+  .set-opts { gap: 5px; }
+  .sb { padding: 8px 10px; font-size: 11px; }
+  .add-btn { padding: 10px; font-size: 11px; }
+  .char-list { max-height: 220px; }
+  .char-name { font-size: 12px; }
+  .char-meta { font-size: 9px; }
+  .notes-ta { min-height: 50px; font-size: 11px; }
+  .level-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .field input, .field select { font-size: 12px; padding: 7px 10px; }
+  .field label { font-size: 9px; }
+  .cl-item { font-size: 11px; padding: 6px 9px; }
+}
+
+@media (max-width: 480px) {
+  .hdr h1 { font-size: 16px; letter-spacing: 2px; }
+  .grid7 { grid-template-columns: 1fr; }
+  .links-g { grid-template-columns: 1fr 1fr; }
+  .topbar > div:last-child { flex-direction: column; }
+  .tbtn { width: 100%; }
+  .exp-legend { flex-direction: column; gap: 5px; }
+}
+
+@media (max-width: 800px) and (orientation: landscape) {
+  .grid7 { grid-template-columns: repeat(4,1fr); }
+  .hdr { padding: 10px 0 10px; }
+  .hdr h1 { font-size: 18px; }
+  .cols { gap: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="bg-layer"></div>
+<div id="sparks"></div>
+<div class="wrap">
+
+  <div class="hdr">
+    <div class="hdr-orn">
+      <div class="hdr-wing"></div>
+      <div class="hdr-star">✦</div>
+      <div class="hdr-wing r"></div>
+    </div>
+    <h1>Genshin Weekly Planner</h1>
+    <p>Automated Traveler's Schedule · Teyvat</p>
+    <div class="hdr-sub"><div class="sl"></div><div class="sd"></div><div class="sl r"></div></div>
+  <!-- TOP 3 COLUMNS -->
+  <div class="cols">
+
+    <!-- COL 1 -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="panel">
+        <div class="ph"><span>⚔️</span><h2>Add Character</h2></div>
+        <div class="pb">
+          <div class="field"><label>Character Name</label><input id="cname" type="text" placeholder="e.g. Hu Tao, Furina…" maxlength="22"></div>
+          <div class="field"><label>Element</label>
+            <div class="egrid" id="egrid">
+              <button class="eb" data-e="🔥">🔥</button>
+              <button class="eb" data-e="💧">💧</button>
+              <button class="eb" data-e="🌀">🌀</button>
+              <button class="eb" data-e="⚡">⚡</button>
+              <button class="eb" data-e="🌿">🌿</button>
+              <button class="eb" data-e="❄️">❄️</button>
+              <button class="eb" data-e="🪨">🪨</button>
+              <button class="eb on" data-e="✨">✨</button>
+            </div>
+          </div>
+          <div class="level-row">
+            <div class="field"><label>Current Level</label><input id="clvl" type="number" placeholder="1–90" min="1" max="90"></div>
+            <div class="field"><label>Ascension</label>
+              <select id="casc">
+                <option value="0">0★ Lv 1</option><option value="1">1★ Lv 20+</option>
+                <option value="2">2★ Lv 40+</option><option value="3">3★ Lv 50+</option>
+                <option value="4">4★ Lv 60+</option><option value="5">5★ Lv 70+</option>
+                <option value="6" selected>6★ Lv 90</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label>Talent Material Set</label>
+            <div class="set-opts">
+              <button class="sb on" data-s="A" onclick="pickSet('A',this)"><div class="sdot" style="background:var(--setA)"></div><div><div class="sname">Set A</div><div class="sdays">Mon · Thu · Sunday</div></div></button>
+              <button class="sb" data-s="B" onclick="pickSet('B',this)"><div class="sdot" style="background:var(--setB)"></div><div><div class="sname">Set B</div><div class="sdays">Tue · Fri · Sunday</div></div></button>
+              <button class="sb" data-s="C" onclick="pickSet('C',this)"><div class="sdot" style="background:var(--setC)"></div><div><div class="sname">Set C</div><div class="sdays">Wed · Sat · Sunday</div></div></button>
+            </div>
+          </div>
+          <div class="field">
+            <label>🪬 Artifact Domain <span style="color:var(--text-dim);font-weight:400;">(optional)</span></label>
+            <input id="cart" type="text" placeholder="e.g. Ridge Watch, Pale Flame…" maxlength="40">
+            <div class="art-note">Leave blank to show a generic reminder</div>
+          </div>
+          <button class="add-btn" onclick="addChar()">✦ Add to Schedule</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span>🗂️</span><h2>Characters in Plan</h2></div>
+        <div class="pb">
+          <div class="char-list" id="char-list"><div class="empty-chars">No characters yet.<br>Add one above! 🌿</div></div>
+        </div>
+      </div>
+    </div><!-- /col1 -->
+
+    <!-- COL 2 -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="panel" id="daily-panel">
+        <div class="ph"><span>✅</span><h2>Today's Checklist</h2><span id="daily-timer" style="margin-left:auto;font-size:10px;color:var(--text-dim);font-family:'Quicksand',sans-serif;font-weight:700;"></span></div>
+        <div class="pb">
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">✨ HoYoLAB Daily Check-in</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🎯 Daily Commissions (4/4)</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">⬡ Spend Original Resin</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">📋 BP Daily Missions</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🎪 Milestria Wonderland Log-in</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">📮 Expedition Dispatch</span></div>
+          <div class="sep"></div>
+          <button class="tbtn" style="width:100%;justify-content:center;" onclick="resetCL()">↺ Reset for Today</button>
+        </div>
+      </div>
+    <div class="panel" id="weekly-panel">
+        <div class="ph"><span>📅</span><h2>Weekly To-Dos</h2><span id="weekly-timer" style="margin-left:auto;font-size:10px;color:var(--text-dim);font-family:'Quicksand',sans-serif;font-weight:700;"></span></div>
+        <div class="pb">
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">⚔️ Weekly Boss</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">📋 BP Weekly Missions</span></div>
+          <div class="cl-item" id="milestria-item" onclick="ckMilestria(this)"><div class="cl-box" id="milestria-box">✓</div><span class="cl-label">🎪 Milestria Wonderland <span id="milestria-count" style="font-size:10px;color:var(--text-dim);margin-left:4px;">(0/3)</span></span></div>
+          <div class="cl-item" id="teapot-item" onclick="ckTeapot(this)"><div class="cl-box">✓</div><span class="cl-label">🏰 Collect Teapot Coins <span style="font-size:10px;color:var(--text-dim);margin-left:4px;">(resets in 3 days)</span></span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🌀 Spiral Abyss</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🎭 Imaginarium Theater</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🗺️ Parametric Transformer</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">✡️ Stygian Onslaught</span></div>
+          <div class="sep"></div>
+          <button class="tbtn" style="width:100%;justify-content:center;" onclick="resetWeekly()">↺ Reset Weekly</button>
+        </div>
+      </div>
+    </div><!-- /col2 -->
+
+    <!-- COL 3 -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="panel">
+        <div class="ph"><span>💡</span><h2>Smart Resin Rule</h2></div>
+        <div class="pb" style="font-size:12px;color:var(--text-mid);line-height:1.6;font-weight:600;">
+          <div style="display:grid;gap:8px;">
+
+            <div style="padding:10px 12px;background:var(--bg2);border-radius:8px;border-left:3px solid var(--setA);">
+              <div style="color:var(--setA);font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;margin-bottom:3px;">📖 TALENT DAYS</div>
+              <div style="font-size:10px;color:var(--text-dim);">Mon · Thu &nbsp;|&nbsp; Tue · Fri &nbsp;|&nbsp; Wed · Sat &nbsp;|&nbsp; Sun (all sets)</div>
+              <div style="margin-top:4px;font-size:11px;">Focus <strong style="color:var(--gold-dim);">all resin</strong> on Talent Domain today!</div>
+            </div>
+
+            <div style="padding:10px 12px;background:var(--bg2);border-radius:8px;border-left:3px solid var(--red);">
+              <div style="color:var(--red);font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;margin-bottom:3px;">⚗️ OFF DAYS</div>
+              <div style="font-size:10px;color:var(--text-dim);">No talent domain available</div>
+              <div style="margin-top:4px;font-size:11px;">World Boss · Artifact Domain · Ascension Mats<br><span style="color:var(--green);font-size:10px;">✓ Resin is free — farm freely!</span></div>
+            </div>
+
+            <div style="padding:10px 12px;background:var(--bg2);border-radius:8px;border-left:3px solid var(--weekly);">
+              <div style="color:var(--weekly);font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;margin-bottom:3px;">⚔️ WEEKLY BOSS</div>
+              <div style="font-size:10px;color:var(--text-dim);">Resets every Monday</div>
+              <div style="margin-top:4px;font-size:11px;">Separate from resin priority — do anytime this week.</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span>🔗</span><h2>Quick Links</h2></div>
+        <div class="pb">
+          <div class="links-g">
+            <a href="https://www.hoyolab.com/home" target="_blank" class="lk">🏠 HoYoLAB</a>
+            <a href="https://genshin.gg/characters" target="_blank" class="lk">🗂️ Genshin.gg</a>
+            <a href="https://paimon.moe/todo" target="_blank" class="lk">🧚 Paimon.moe</a>
+            <a href="https://www.hoyolab.com/home/events" target="_blank" class="lk">📅 Events</a>
+            <a href="https://act.hoyolab.com/ys/event/signin-sea-v3/index.html?act_id=e202102251931481&hyl_auth_required=true&hyl_presentation_style=fullscreen&utm_source=hoyolab&utm_medium=tools&lang=en-us&bbs_theme=dark&bbs_theme_device=1" target="_blank" class="lk">✨ Daily Check-in</a>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="primo-panel">
+        <div class="ph"><span>✨</span><h2>Primo Sources</h2></div>
+        <div class="pb">
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🏠 HoYoLAB Daily Check-in</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🎯 Daily Commissions (20 × 4)</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">💎 Welkin Moon Daily (90/day)</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🎪 Active Events</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🗺️ Exploration (Chests, Puzzles)</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">📜 BP Artifact Lvl Up (if BP active)</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🏛️ Spiral Abyss (up to 1200)</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🎭 Imaginarium Theater (up to 600)</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">📮 Mail / Patch Codes</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">🏆 Achievement Unlocks</span></div>
+          <div class="cl-item" onclick="ck(this)"><div class="cl-box">✓</div><span class="cl-label">✡️ Stygian Onslaught</span></div>
+        </div>
+      </div>
+    </div><!-- /col3 -->
+
+  </div><!-- /cols -->
+
+  <!-- FULL WIDTH WEEKLY SCHEDULE -->
+  <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+    <div class="topbar">
+      <div>
+        <div class="wlabel">📅 This Week's Schedule</div>
+        <div class="wsub" id="wrange">—</div>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;">
+        <button class="tbtn" onclick="clearAll()">🗑 Clear All</button>
+        <button class="tbtn hi" onclick="dlPNG()">⬇ Download PNG</button>
+        <a href="https://www.hoyolab.com" target="_blank" class="tbtn hi">🌐 HoYoLAB</a>
+      </div>
+    </div>
+    <div id="export-box">
+      <div class="exp-hdr">
+        <div>
+          <div class="exp-title">✦ GENSHIN WEEKLY PLANNER</div>
+          <div class="exp-sub" id="exp-range">Week of —</div>
+        </div>
+        <div style="text-align:right;font-size:10px;color:var(--text-dim);">
+          <div style="font-weight:700;">Genshin Planner</div>
+          <div style="color:var(--gold-dim);">hoyolab.com</div>
+        </div>
+      </div>
+      <div class="exp-legend">
+        <div class="leg"><div class="leg-bar" style="background:var(--setA)"></div><span style="color:var(--setA)">Set A · Mon·Thu·Sun</span></div>
+        <div class="leg"><div class="leg-bar" style="background:var(--setB)"></div><span style="color:var(--setB)">Set B · Tue·Fri·Sun</span></div>
+        <div class="leg"><div class="leg-bar" style="background:var(--setC)"></div><span style="color:var(--setC)">Set C · Wed·Sat·Sun</span></div>
+        <div class="leg"><div class="leg-bar" style="background:var(--artifact)"></div><span style="color:var(--artifact)">🪬 Artifact Domain</span></div>
+        <div class="leg"><div class="leg-bar" style="background:var(--weekly)"></div><span style="color:var(--weekly)">⚔️ Weekly Boss (Mon)</span></div>
+        <div class="leg"><div class="leg-bar" style="background:var(--gold)"></div><span style="color:var(--gold-dim)">📖 Talent Day = Resin Priority</span></div>
+      </div>
+      <div class="grid7" id="grid7"></div>
+      <div style="padding:0 12px 14px;background:var(--bg);">
+        <div style="font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:5px;">📝 Traveler's Notes</div>
+        <textarea class="notes-ta" placeholder="Weekly goals, farming priorities, reminders…"></textarea>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<div class="toast" id="toast"></div>
+<script>
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
+<script>
+const DSHORT=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DAY_SETS={0:['A'],1:['B'],2:['C'],3:['A'],4:['B'],5:['C'],6:['A','B','C']};
+const LINKS={talent:'https://genshin-impact.fandom.com/wiki/Talent',artifact:'https://genshin-impact.fandom.com/wiki/Artifact',boss:'https://genshin-impact.fandom.com/wiki/Monsters',weekly:'https://genshin-impact.fandom.com/wiki/Weekly_Boss',ascend:'https://genshin-impact.fandom.com/wiki/Character_Ascension'};
+
+let chars=JSON.parse(localStorage.getItem('gw3_chars')||'[]');
+let doneMap=JSON.parse(localStorage.getItem('gw3_done')||'{}');
+let selElem='✨',selSet='A';
+
+(function(){
+  const c=document.getElementById('sparks');
+  const cols=['#c49a28','#4cc97a','#4a90d9','#a060d4','#d97840'];
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');s.className='sp';
+    const sz=Math.random()*3+1,col=cols[Math.floor(Math.random()*cols.length)];
+    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${col};--d:${3+Math.random()*5}s;--dl:${Math.random()*7}s;--op:${.15+Math.random()*.35};`;
+    c.appendChild(s);
+  }
+})();
+
+function weekDates(){
+  const t=new Date();
+  const adj=new Date(t.getTime()-4*3600*1000); // treat pre-4am as previous day
+  const dow=adj.getDay();
+  const m=new Date(adj);
+  m.setDate(adj.getDate()+(dow===0?-6:1-dow));
+  m.setHours(0,0,0,0);
+  return Array.from({length:7},(_,i)=>{const d=new Date(m);d.setDate(m.getDate()+i);return d;});
+}
+function fmt(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+document.getElementById('egrid').addEventListener('click',e=>{
+  const b=e.target.closest('.eb');if(!b)return;
+  document.querySelectorAll('.eb').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');selElem=b.dataset.e;
+});
+function pickSet(s,btn){selSet=s;document.querySelectorAll('.sb').forEach(x=>x.classList.remove('on'));btn.classList.add('on');}
+
+function addChar(){
+  const name=document.getElementById('cname').value.trim();
+  if(!name){toast('⚠ Enter a character name!');return;}
+  chars.push({id:Date.now(),name,elem:selElem,set:selSet,lvl:document.getElementById('clvl').value||'?',asc:document.getElementById('casc').value,art:document.getElementById('cart').value.trim()});
+  save();render();toast(`✦ ${name} added!`);
+  document.getElementById('cname').value='';
+  document.getElementById('clvl').value='';
+  document.getElementById('cart').value='';
+}
+function removeChar(id){chars=chars.filter(c=>c.id!==id);save();render();}
+function clearAll(){if(!chars.length)return;if(!confirm('Remove all characters?'))return;chars=[];doneMap={};save();render();toast('Schedule cleared.');}
+function save(){localStorage.setItem('gw3_chars',JSON.stringify(chars));localStorage.setItem('gw3_done',JSON.stringify(doneMap));}
+
+function toggleDone(key){
+  doneMap[key]=!doneMap[key];save();
+  const card=document.getElementById('c-'+key);if(!card)return;
+  card.classList.toggle('done',doneMap[key]);
+  const btn=card.querySelector('.tc-done');if(btn)btn.textContent=doneMap[key]?'✓':'○';
+}
+
+function tasksForChar(char,dayIdx){
+  const talentDay=DAY_SETS[dayIdx].includes(char.set);
+  const isMon=(dayIdx===0);
+  const tasks=[];
+  if(talentDay){
+    tasks.push({type:'talent',label:'📖 Farm Talent Domain',sub:`Set ${char.set} · Resin priority today`,link:LINKS.talent});
+  } else {
+    tasks.push({type:'boss',label:'👹 World Boss Drops',sub:'Farm character ascension boss',link:LINKS.boss});
+    tasks.push({type:'artifact',label:'🪬 Artifact Domain',sub:char.art||'Farm artifact sets',link:LINKS.artifact});
+    tasks.push({type:'ascend',label:'🪨 Ascension Materials',sub:'Local specialties & enemy drops',link:LINKS.ascend,free:true});
+  }
+  if(isMon) tasks.push({type:'weekly',label:'⚔️ Weekly Boss Drop',sub:'Resets every Monday',link:LINKS.weekly});
+  return tasks;
+}
+
+function renderCharList(){
+  const list=document.getElementById('char-list');
+  if(!chars.length){list.innerHTML=`<div class="empty-chars">No characters yet.<br>Add one above! 🌿</div>`;return;}
+  const al=['0★','1★','2★','3★','4★','5★','6★'];
+  list.innerHTML=chars.map(c=>`
+    <div class="char-row">
+      <div class="char-elem">${c.elem}</div>
+      <div class="char-info">
+        <div class="char-name">${esc(c.name)}</div>
+        <div class="char-meta">Lv.${c.lvl} · Asc ${al[c.asc]||c.asc} · Set ${c.set}</div>
+        ${c.art?`<div class="char-art">🪬 ${esc(c.art)}</div>`:''}
+      </div>
+      <div class="csb cs-${c.set}">Set ${c.set}</div>
+      <button class="char-del" onclick="removeChar(${c.id})" title="Remove">✕</button>
+    </div>`).join('');
+}
+
+function renderGrid(){
+  const grid=document.getElementById('grid7');
+  const dates=weekDates();
+  const now=new Date();
+const adjNow=new Date(now.getTime()-4*3600*1000);
+const today=adjNow.toDateString();
+  const range=`${fmt(dates[0])} – ${fmt(dates[6])}`;
+  document.getElementById('wrange').textContent=range;
+  document.getElementById('exp-range').textContent=`Week of ${range}`;
+  const hc={A:'ta',B:'tb',C:'tc'};
+  const bt={A:`<span class="dbadge ba">SET A</span>`,B:`<span class="dbadge bb">SET B</span>`,C:`<span class="dbadge bc">SET C</span>`};
+  grid.innerHTML='';
+  dates.forEach((date,di)=>{
+    const isSun=(di===6),isToday=(date.toDateString()===today),sets=DAY_SETS[di];
+    const hdrCls=isSun?'ts':hc[sets[0]];
+    const badges=isSun?`<span class="dbadge bsun">ALL SETS</span>`:sets.map(s=>bt[s]).join('');
+    let cards='',talentCount=0;
+    chars.forEach((char)=>{
+      const tasks=tasksForChar(char,di);
+      if(DAY_SETS[di].includes(char.set)) talentCount++;
+      tasks.forEach((t,ti)=>{
+        const key=`${char.id}_${di}_${ti}`,done=!!doneMap[key];
+        cards+=`<div class="tcard type-${t.type}${done?' done':''}" id="c-${key}">
+          <div class="tc-top"><span class="tc-elem">${char.elem}</span><span class="tc-char">${esc(char.name)}</span><button class="tc-done" onclick="toggleDone('${key}')">${done?'✓':'○'}</button></div>
+          <div class="tc-label">${t.label}</div><div class="tc-sub">${t.sub||''}</div>
+          ${t.free?`<div class="free-badge">No resin</div>`:''}
+          <a href="${t.link}" target="_blank" class="tc-link">Wiki ↗</a>
+        </div>`;
+      });
+    });
+    if(talentCount>0&&chars.length) cards=`<div class="resin-rule">📖 Talent day — focus your resin here!</div>`+cards;
+    if(!chars.length) cards=`<div class="day-empty">Add a character ✨</div>`;
+    const col=document.createElement('div');col.className='dcol';
+    col.innerHTML=`<div class="dhdr ${hdrCls}${isToday?' today-hdr':''}"><div class="dname">${DSHORT[di]}${isToday?' ★':''}</div><div class="ddate">${fmt(date)}</div>${badges}</div><div class="dtasks">${cards}</div>`;
+    grid.appendChild(col);
+  });
+}
+
+function render(){renderCharList();renderGrid();}
+function ck(el){
+  el.classList.toggle('ck');
+  saveCL();
+}
+
+function saveCL(){
+  const daily=[...document.querySelectorAll('#daily-panel .cl-item')].map(e=>e.classList.contains('ck'));
+  const weekly=[...document.querySelectorAll('#weekly-panel .cl-item')].map(e=>e.classList.contains('ck'));
+  const primo=[...document.querySelectorAll('#primo-panel .cl-item')].map(e=>e.classList.contains('ck'));
+  localStorage.setItem('gw3_daily_ck', JSON.stringify(daily));
+  localStorage.setItem('gw3_weekly_ck', JSON.stringify(weekly));
+  localStorage.setItem('gw3_primo_ck', JSON.stringify(primo));
+}
+
+function loadCL(){
+  const daily=JSON.parse(localStorage.getItem('gw3_daily_ck')||'[]');
+  const weekly=JSON.parse(localStorage.getItem('gw3_weekly_ck')||'[]');
+  const primo=JSON.parse(localStorage.getItem('gw3_primo_ck')||'[]');
+  [...document.querySelectorAll('#daily-panel .cl-item')].forEach((e,i)=>{ if(daily[i]) e.classList.add('ck'); });
+  [...document.querySelectorAll('#weekly-panel .cl-item')].forEach((e,i)=>{ if(weekly[i]) e.classList.add('ck'); });
+  [...document.querySelectorAll('#primo-panel .cl-item')].forEach((e,i)=>{ if(primo[i]) e.classList.add('ck'); });
+}
+
+function resetCL(){
+  document.querySelectorAll('#daily-panel .cl-item').forEach(e=>e.classList.remove('ck'));
+  document.querySelectorAll('#primo-panel .cl-item').forEach(e=>e.classList.remove('ck'));
+  localStorage.removeItem('gw3_daily_ck');
+  localStorage.removeItem('gw3_primo_ck');
+  localStorage.setItem('gw3_daily_reset', Date.now());
+  toast('↺ Checklist reset!');
+}
+
+(function autoDailyReset(){
+  const last=parseInt(localStorage.getItem('gw3_daily_reset')||'0');
+  const now=new Date();
+  const todayStart=(()=>{const d=new Date(now.getFullYear(),now.getMonth(),now.getDate(),4,0,0);if(now<d)d.setDate(d.getDate()-1);return d.getTime();})();
+  if(last < todayStart){
+    localStorage.removeItem('gw3_daily_ck');
+    localStorage.removeItem('gw3_primo_ck');
+    localStorage.setItem('gw3_daily_reset', Date.now());
+  }
+})();
+
+function ckMilestria(el){
+  let count = parseInt(localStorage.getItem('gw3_milestria_count')||'0');
+  const lastLog = localStorage.getItem('gw3_milestria_lastlog')||'';
+  const today = new Date().toDateString();
+
+  // If already logged today, allow UNDO
+  if(lastLog === today){
+    if(confirm('Undo today\'s Milestria log?')){
+      count = Math.max(0, count-1);
+      localStorage.setItem('gw3_milestria_count', count);
+      localStorage.removeItem('gw3_milestria_lastlog');
+      document.getElementById('milestria-count').textContent = `(${count}/3)`;
+      el.classList.remove('ck');
+      saveCL();
+      toast('↺ Milestria log undone!');
+    }
+    return;
+  }
+
+  // Lock at 3
+  if(count >= 3) return;
+
+  count++;
+  localStorage.setItem('gw3_milestria_count', count);
+  localStorage.setItem('gw3_milestria_lastlog', today);
+  document.getElementById('milestria-count').textContent = `(${count}/3)`;
+  if(count >= 3){
+    el.classList.add('ck');
+    document.getElementById('milestria-box').textContent = '✓';
+    toast('🎪 Milestria done for the week!');
+  } else {
+    toast(`🎪 Milestria logged! ${count}/3 — come back tomorrow!`);
+  }
+  saveCL();
+}
+
+function ckTeapot(el){
+  if(el.classList.contains('ck')){
+    if(confirm('Undo teapot coin collection?')){
+      el.classList.remove('ck');
+      localStorage.removeItem('gw3_teapot_reset');
+      saveCL();
+      toast('↺ Teapot collection undone!');
+    }
+    return;
+  }
+  el.classList.add('ck');
+  localStorage.setItem('gw3_teapot_reset', Date.now());
+  saveCL();
+  toast('🏰 Teapot coins collected! Resets in 3 days~');
+}
+
+function resetWeekly(){
+  const key='gw3_weekly_reset';
+  if(!confirm('Reset all weekly to-dos?')) return;
+  document.querySelectorAll('#weekly-panel .cl-item').forEach(e=>e.classList.remove('ck'));
+  localStorage.setItem(key, Date.now());
+  localStorage.removeItem('gw3_milestria_count');
+  localStorage.removeItem('gw3_milestria_lastlog');
+  localStorage.removeItem('gw3_teapot_reset');
+  document.getElementById('milestria-count').textContent='(0/3)';
+  toast('↺ Weekly to-dos reset!');
+}
+
+(function loadSpecialItems(){
+  // Milestria
+  const count = parseInt(localStorage.getItem('gw3_milestria_count')||'0');
+  document.getElementById('milestria-count').textContent = `(${count}/3)`;
+  if(count >= 3){
+    document.getElementById('milestria-item').classList.add('ck');
+  }
+
+  // Teapot — resets after 3 days
+  const teapotTime = parseInt(localStorage.getItem('gw3_teapot_reset')||'0');
+  const threeDays = 3 * 24 * 60 * 60 * 1000;
+  if(teapotTime && Date.now() - teapotTime < threeDays){
+    document.getElementById('teapot-item').classList.add('ck');
+  } else if(teapotTime) {
+    localStorage.removeItem('gw3_teapot_reset');
+  }
+})();
+
+(function autoWeeklyReset(){
+  const key='gw3_weekly_reset';
+  const last=parseInt(localStorage.getItem(key)||'0');
+  const now=new Date();
+  const adjusted=new Date(now.getTime() - 4*3600*1000); // shift back 4h so pre-4am = previous day
+  const day=adjusted.getDay();
+  const lastMon=new Date(adjusted);
+  lastMon.setDate(adjusted.getDate()-(day===0?6:day-1));
+  lastMon.setHours(0,0,0,0);
+  if(last < lastMon.getTime()){
+    document.querySelectorAll('#weekly-panel .cl-item').forEach(e=>e.classList.remove('ck'));
+    localStorage.setItem(key, Date.now());
+    localStorage.removeItem('gw3_milestria_count');
+    localStorage.removeItem('gw3_teapot_reset');
+    if(document.getElementById('milestria-count')) document.getElementById('milestria-count').textContent='(0/3)';
+  }
+})();
+
+async function dlPNG(){
+  toast('📸 Preparing your schedule…');
+  const el=document.getElementById('export-box');
+  const btns=el.querySelectorAll('.tc-done');
+  btns.forEach(b=>b.style.visibility='hidden');
+  try{
+    const cv=await html2canvas(el,{backgroundColor:'#f4faf6',scale:2,useCORS:true,logging:false});
+    const a=document.createElement('a');a.download='genshin-weekly-planner.png';a.href=cv.toDataURL('image/png');a.click();
+    toast('✓ Downloaded!');
+  }catch(e){toast('⚠ Error — try again.');}
+  finally{btns.forEach(b=>b.style.visibility='');}
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+let _tt;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── Countdown Timers ─────────────────────────────────────
+function updateTimers(){
+  const now = new Date();
+
+  // Daily — resets at midnight
+  const next4am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 4, 0, 0);
+if(now >= next4am) next4am.setDate(next4am.getDate() + 1);
+const nextMidnight = next4am;
+  const diffD = nextMidnight - now;
+  const dH = Math.floor(diffD / 3600000);
+  const dM = Math.floor((diffD % 3600000) / 60000);
+  const dS = Math.floor((diffD % 60000) / 1000);
+  const dailyEl = document.getElementById('daily-timer');
+  if(dailyEl) dailyEl.textContent = `⏱ resets in ${dH}h ${dM}m ${dS}s`;
+
+  // Weekly — resets next Monday midnight
+  const day = now.getDay(); // 0=Sun
+  const daysUntilMon = day === 0 ? 1 : 8 - day;
+  const nextMon = new Date(now.getFullYear(), now.getMonth(), now.getDate()+daysUntilMon);
+  const diffW = nextMon - now;
+  const wD = Math.floor(diffW / 86400000);
+  const wH = Math.floor((diffW % 86400000) / 3600000);
+  const wM = Math.floor((diffW % 3600000) / 60000);
+  const weeklyEl = document.getElementById('weekly-timer');
+  if(weeklyEl) weeklyEl.textContent = wD > 0 ? `⏱ ${wD}d ${wH}h ${wM}m` : `⏱ ${wH}h ${wM}m left`;
+}
+updateTimers();
+setInterval(updateTimers, 1000);
+render();
+loadCL();
+
+const n=new Date();
+const next4=new Date(n.getFullYear(),n.getMonth(),n.getDate(),4,0,0);
+if(n>=next4) next4.setDate(next4.getDate()+1);
+setTimeout(()=>{doneMap={};save();render();loadCL();}, next4-n);
+</script>
+</body>
+</html>
