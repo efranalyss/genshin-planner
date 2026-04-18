@@ -1,4 +1,4 @@
-const CACHE = 'gw-planner-v2';
+const CACHE = 'gw-planner-v3';
 const ASSETS = [
   './',
   './index.html',
